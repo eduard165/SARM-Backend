@@ -25,6 +25,10 @@ def login(body: LoginRequest, db: Client = Depends(admin_client)):
         session = client.auth.sign_in_with_password({'email': auth_account.email, 'password': body.password}).session
         if not session:
             raise invalid
+        from app.services.rpc import ejecutar_rpc
+        enabled = ejecutar_rpc(db, 'sarm_comprobar_acceso', {'p_usuario': str(records[0]['id'])}, migracion='13')
+        if enabled is not True:
+            raise HTTPException(403, 'Cuenta sin acceso activo a un negocio')
         return {'access_token': session.access_token, 'refresh_token': session.refresh_token,
                 'token_type': 'bearer', 'expires_in': session.expires_in}
     except HTTPException:

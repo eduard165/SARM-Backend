@@ -44,6 +44,10 @@ def get_identity(
         roles = db.table('roles').select('codigo').eq('id', user['rol_id']).limit(1).execute().data or []
         if not roles:
             raise HTTPException(status_code=403, detail='Rol SARM no valido')
+        from app.services.rpc import ejecutar_rpc
+        enabled = ejecutar_rpc(db, 'sarm_comprobar_acceso', {'p_usuario': str(user['id'])}, migracion='13')
+        if enabled is not True:
+            raise HTTPException(403, 'Cuenta sin acceso activo a un negocio')
         return Identity(id=UUID(str(user['id'])), rol=roles[0]['codigo'], nombre_usuario=user['nombre_usuario'])
     except HTTPException:
         raise

@@ -9,6 +9,9 @@ from app.services.accounts import crear_cuenta
 from app.services.user_listing import listar_usuarios
 from app.schemas.user_listing import UsuariosListadoOut, RolUsuario, EstadoUsuario
 
+from app.schemas.user_status import CambioEstadoUsuario, EstadoUsuarioOut
+from app.services.user_status import cambiar_estado
+
 router = APIRouter(tags=['Administracion de cuentas'])
 
 
@@ -49,3 +52,9 @@ def consultar_usuarios(
 ):
     return listar_usuarios(db, actor, busqueda=q, rol=rol, negocio_id=negocio_id,
                           estado=estado, pagina=pagina, tamano_pagina=tamano_pagina)
+
+
+@router.patch('/usuarios/{usuario_id}/estado', response_model=EstadoUsuarioOut)
+def actualizar_estado_usuario(usuario_id: UUID, data: CambioEstadoUsuario,
+                              actor: Identity = Depends(get_identity), db: Client = Depends(admin_client)):
+    return cambiar_estado(db, actor, usuario_id, data)
