@@ -1,48 +1,92 @@
-# SARM Backend V1 — FastAPI + Supabase SDK
+# SARM Backend — listado de usuarios
 
-Backend modular de SARM. Conserva RLS y las reglas de las migraciones 01–08. **NO incluye credenciales**.
+FastAPI + Supabase. Conserva login y altas actuales; agrega `GET /usuarios` con filtros, paginación y control de acceso.
 
-## Preparación en Windows
+## Actualizar
 
-1. Extrae este ZIP y respalda tu `.env` existente antes de reemplazar la carpeta.
-2. Copia `.env.example` como `.env`, completa los valores reales y **rota cualquier clave secreta compartida anteriormente**.
-3. Ejecuta `setup.bat` y `run.bat`.
-4. Abre `http://127.0.0.1:8000/docs`. Comprueba `GET /health/db` (32 estados).
+1. Copia el contenido de esta carpeta sobre tu backend local. Conserva tu `.env`, `.venv` y `.git`. Este ZIP no incluye credenciales ni `.env.example`.
+2. Aplica **una sola vez** `database/20261029001000_listado_usuarios.sql` en Supabase SQL Editor. También puedes copiarlo a `sarm-db/supabase/migrations/` y ejecutar `npx supabase db push` desde ese proyecto. No apliques por ambas vías sin registrar la migración en el historial del CLI.
+3. Si tu proyecto usa una lista de funciones expuestas en Data API, agrega `sarm_listar_usuarios`, como se hizo con las funciones de creación. Sus permisos de ejecución son solo de `service_role`; no concedas acceso a `anon` o `authenticated`.
+4. Prueba localmente con `run.bat` y abre http://127.0.0.1:8000/docs.
+5. Sube los cambios a la rama `main` del repositorio para que Vercel despliegue la actualización.
 
-## Paso obligatorio de BD: migración 09
+La migración solo crea una función de consulta y sus permisos. No cambia las tablas, cuentas, negocios, membresías ni políticas RLS. Requiere tus migraciones 01–09 ya aplicadas. El propietario que ejecute la migración debe ser el propietario habitual de las migraciones (SQL Editor como postgres).
 
-**No basta con reemplazar los archivos Python.** Para que la creación de cuentas de administrador sea atómica frente a las restricciones diferidas de migración 07/08, necesitas aplicar la migración nueva:
+## GET /usuarios
 
-1. Copia `database/20261012000900_operaciones_transaccionales.sql` al proyecto de migraciones existente `sarm-db/supabase/migrations/`.
-2. Desde `sarm-db` ejecuta `npx supabase db push`.
-3. En Supabase → Data API habilita las funciones `sarm_crear_cuenta`, `sarm_crear_negocio`, y las tablas necesarias: `usuarios`, `roles`, `usuario_negocios`, `negocios`, `estados`, `municipios` (la primera prueba solo requiere `estados`). Habilitarlas no concede acceso público: **mantén RLS y los permisos existentes**. No expongas otras tablas innecesarias.
-4. Las funciones solo tienen permiso de ejecución concedido a `service_role`; el backend valida el token, el rol y el negocio y las funciones vuelven a comprobar los permisos. No expongas jamás `SUPABASE_SECRET_KEY` al frontend.
+Requiere `Authorization: Bearer <access_token>`.
 
-### Endpoints existentes conservados
+| Rol autenticado | Alcance |
+|---|---|
+| superadministrador | Todas las cuentas, incluida la propia; puede filtrar por negocio. |
+| administrador | Solo usuarios operativos de su único negocio activo. No se incluye a sí mismo ni a otros administradores. |
+| usuario | 403. |
 
-- `GET /health`, `GET /health/db` — salud
-- `GET /catalogos/estados`, `GET /catalogos/municipios?estado_id=30` — catálogos
-- `GET /auth/me` — perfil autenticado
-- `GET /negocios` — negocios visibles según rol
+El administrador no puede ampliar su alcance indicando otro `negocio_id`. La API usa la identidad verificada por Supabase Auth y la función SQL vuelve a comprobar rol, bloqueo y negocio. Para cuentas compartidas preexistentes, el administrador solo recibe la membresía de su negocio, sin datos de los otros negocios.
 
-### Endpoints nuevos
+### Parámetros opcionales
 
-- `POST /auth/login` — nombre de usuario y contraseña → JWT; requiere cuenta previamente registrada.
-- `POST /negocios` — crea negocio y ubicación, solo superadministrador.
-- `POST /administradores` — crea administrador y lo vincula obligatoriamente a un negocio activo.
-- `POST /usuarios` — crea usuario operativo en un negocio activo. Si llama un administrador, se usa **su** negocio.
+| Parámetro | Valores |
+|---|---|
+| `q` | Búsqueda literal por nombre o nombre de usuario; hasta 100 caracteres, sin distinguir mayúsculas. |
+| `rol` | `superadministrador`, `administrador`, `usuario`. Un administrador solo puede solicitar `usuario`. |
+| `negocio_id` | UUID. Para administrador se obtiene automáticamente y no puede apuntar a otro negocio. |
+| `estado` | `activo` o `suspendido`. |
+| `pagina` | Desde 1; máximo 1000000. Predeterminado 1. |
+| `tamano_pagina` | De 1 a 100. Predeterminado 20. |
 
-Todos los endpoints de creación requieren `Authorization: Bearer <access_token>`. **No hay endpoint para registrar superadministradores.** La identidad de superadministrador se configura manualmente en Supabase Auth y `public.usuarios`, con el mismo UUID y el rol existente, sin negocio.
+Ejemplos:
 
-### Creación de usuarios y recuperación ante errores
+```text
+GET /usuarios
+GET /usuarios?q=Roberto
+GET /usuarios?rol=administrador&pagina=1&tamano_pagina=20
+GET /usuarios?rol=usuario&estado=activo
+```
 
-FastAPI crea una identidad mediante `supabase.auth.admin.create_user` con correo técnico interno y luego llama a una función RPC que **inserta perfil + membresía + auditoría en una sola transacción**; el trigger diferido valida al confirmar. Si la función RPC falla, FastAPI intenta borrar únicamente la identidad Auth que acaba de crear. Si la limpieza falla, devuelve el UUID para resolverlo manualmente.
+Respuesta:
 
-**El SDK no hace transaccionales las dos llamadas Auth / PostgreSQL**; la compensación es el mecanismo previsto. No cambies las migraciones 01–08.
+```json
+{
+  "items": [],
+  "total": 0,
+  "pagina": 1,
+  "tamano_pagina": 20,
+  "total_paginas": 0
+}
+```
 
-### Limitaciones explícitas de esta entrega
+Cada elemento incluye `id`, `nombre_usuario`, `nombre`, apellidos, `nombre_completo`, `rol`, `estado`, `bloqueo_global`, `creado_en` y `negocios`. Cada negocio contiene `negocio_id`, `nombre`, `estado_membresia` y `estado_negocio`. No se consultan ni devuelven contraseñas, correos técnicos de Auth, claves o tokens.
 
-- No incluye bootstrap automatizado de superadministrador, recuperación de contraseña, solicitudes de vinculación ni endpoints de edición/suspensión; no se inventaron estas reglas.
-- Los endpoints de lectura de catálogos se conservan para la interfaz, aunque su contenido sea público; las consultas se realizan con la clave de backend. Verifica los controles antes de desplegar en internet.
-- El login usa un lookup privilegiado de nombre de usuario → correo técnico Auth. **Antes de publicar es obligatorio agregar rate limiting y protección contra fuerza bruta**, además de CORS restringido y HTTPS.
-- Si `GET /health/db` funciona pero las rutas nuevas fallan, revisa migración 09 y los recursos expuestos en Data API.
+`estado` describe el acceso efectivo: un bloqueo global, o la ausencia de una membresía y negocio activos en el alcance consultado, resulta en `suspendido`. El superadministrador sin negocio es `activo` si no tiene bloqueo global. Este filtro no suspende ni reactiva cuentas.
+
+La búsqueda y los filtros se aplican **antes** de contar y paginar. Orden estable: nombre de usuario y UUID. Una página posterior a la última devuelve `items: []` conservando el total.
+
+## Rutas conservadas
+
+- `POST /auth/login`, `GET /auth/me`.
+- `GET /negocios`, `POST /negocios`.
+- `POST /administradores`, `POST /usuarios`.
+- `GET /catalogos/estados`, `GET /catalogos/municipios?estado_id=30`.
+- `GET /health`, `GET /health/db`.
+
+No se agregan edición, eliminación, suspensión, recuperación de contraseña, renovación de sesión ni cambios de interfaz en esta entrega. Ocultar el menú al operativo corresponde al siguiente cambio del frontend; la API ya rechaza su acceso al listado.
+
+## Validación
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+Resultado local: **30 pruebas Python aprobadas**. Además, la función se validó con **34 comprobaciones SQL en PostgreSQL local mediante PGlite**, incluyendo RLS activado, permisos de ejecución, dos negocios, usuarios compartidos, bloqueos, filtros, paginación y denegaciones. No se usaron las credenciales ni se modificaron los datos de tu Supabase.
+
+Después de aplicar la migración y desplegar, comprueba en Swagger:
+
+1. Superadministrador: `GET /usuarios` incluye `superadmin`, ambos administradores y los operativos existentes.
+2. Administrador A: solo operativos del negocio A; el propio administrador no aparece.
+3. Administrador A indicando negocio B: 403.
+4. Usuario operativo: 403.
+5. Sin token: 401.
+6. Filtros y paginación: los elementos y `total` corresponden al filtro.
+
+Si devuelve 503, comprueba migración 10 y exposición de la función en Data API. Un 502 requiere revisar los logs del backend; no se exponen detalles internos al cliente.
