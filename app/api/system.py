@@ -7,7 +7,7 @@ router = APIRouter(tags=['Sistema'])
 
 @router.get('/health')
 def health():
-    return {'estado': 'ok', 'servicio': 'SARM API', 'version': '0.5.0'}
+    return {'estado': 'ok', 'servicio': 'SARM API', 'version': '0.6.0'}
 
 
 @router.get('/health/db')
