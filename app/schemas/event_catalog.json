@@ -1,0 +1,434 @@
+{
+  "servicio": {
+    "label": "Servicios e inseminaciones",
+    "fields": [
+      {
+        "key": "metodo",
+        "label": "Método",
+        "type": "select",
+        "required": true,
+        "options": [
+          "monta",
+          "inseminacion"
+        ]
+      },
+      {
+        "key": "toro_id",
+        "label": "Toro registrado",
+        "type": "uuid",
+        "required": false
+      },
+      {
+        "key": "codigo_toro",
+        "label": "Código externo de toro o semen",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "responsable",
+        "label": "Responsable",
+        "type": "text",
+        "required": false
+      }
+    ]
+  },
+  "diagnostico": {
+    "label": "Diagnósticos de preñez",
+    "fields": [
+      {
+        "key": "servicio_id",
+        "label": "Servicio relacionado",
+        "type": "uuid",
+        "required": false
+      },
+      {
+        "key": "resultado",
+        "label": "Resultado",
+        "type": "select",
+        "required": true,
+        "options": [
+          "positivo",
+          "negativo",
+          "indeterminado"
+        ]
+      },
+      {
+        "key": "metodo",
+        "label": "Método",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "responsable",
+        "label": "Responsable",
+        "type": "text",
+        "required": false
+      }
+    ]
+  },
+  "parto": {
+    "label": "Partos y nacimientos",
+    "fields": [
+      {
+        "key": "servicio_id",
+        "label": "Servicio relacionado",
+        "type": "uuid",
+        "required": false
+      },
+      {
+        "key": "tipo_parto",
+        "label": "Tipo de parto",
+        "type": "select",
+        "required": true,
+        "options": [
+          "simple",
+          "multiple"
+        ]
+      },
+      {
+        "key": "asistencia",
+        "label": "Asistencia",
+        "type": "select",
+        "required": true,
+        "options": [
+          "sin_asistencia",
+          "asistido",
+          "cesarea"
+        ]
+      },
+      {
+        "key": "crias",
+        "label": "Crías",
+        "type": "crias",
+        "required": true
+      }
+    ]
+  },
+  "celo": {
+    "label": "Celos sin servicio",
+    "fields": [
+      {
+        "key": "signos",
+        "label": "Signos observados",
+        "type": "text",
+        "required": true
+      }
+    ]
+  },
+  "lactancia": {
+    "label": "Lactancias",
+    "fields": [
+      {
+        "key": "origen",
+        "label": "Inicio del seguimiento",
+        "type": "select",
+        "required": true,
+        "options": [
+          "parto_registrado",
+          "sin_parto_conocido"
+        ]
+      },
+      {
+        "key": "parto_id",
+        "label": "Parto relacionado",
+        "type": "uuid",
+        "required": false
+      },
+      {
+        "key": "numero",
+        "label": "Número conocido de lactancia",
+        "type": "number",
+        "required": false,
+        "min": 1,
+        "max": 50
+      }
+    ]
+  },
+  "leche": {
+    "label": "Producción de leche",
+    "fields": [
+      {
+        "key": "lactancia_id",
+        "label": "Lactancia",
+        "type": "uuid",
+        "required": true
+      },
+      {
+        "key": "modalidad",
+        "label": "Modalidad",
+        "type": "select",
+        "required": true,
+        "options": [
+          "por_ordeno",
+          "diario",
+          "mensual"
+        ]
+      },
+      {
+        "key": "cantidad_litros",
+        "label": "Cantidad registrada (litros)",
+        "type": "number",
+        "required": true,
+        "min": 0,
+        "max": 100000
+      },
+      {
+        "key": "periodo_inicio",
+        "label": "Inicio del periodo mensual",
+        "type": "date",
+        "required": false
+      },
+      {
+        "key": "turno",
+        "label": "Turno de ordeño",
+        "type": "text",
+        "required": false
+      }
+    ]
+  },
+  "peso": {
+    "label": "Pesajes y crecimiento",
+    "fields": [
+      {
+        "key": "peso_kg",
+        "label": "Peso (kg)",
+        "type": "number",
+        "required": true,
+        "min": 0.01,
+        "max": 3000
+      },
+      {
+        "key": "etapa",
+        "label": "Etapa",
+        "type": "select",
+        "required": true,
+        "options": [
+          "nacimiento",
+          "destete",
+          "ano",
+          "adulto",
+          "otro"
+        ]
+      }
+    ]
+  },
+  "tratamiento": {
+    "label": "Tratamientos",
+    "fields": [
+      {
+        "key": "producto",
+        "label": "Producto",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "dosis",
+        "label": "Dosis y unidad",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "via",
+        "label": "Vía",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "motivo",
+        "label": "Motivo",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "responsable",
+        "label": "Responsable",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "retiro_leche_hasta",
+        "label": "Retiro de leche hasta",
+        "type": "date",
+        "required": false
+      },
+      {
+        "key": "retiro_carne_hasta",
+        "label": "Retiro de carne hasta",
+        "type": "date",
+        "required": false
+      }
+    ]
+  },
+  "vacuna": {
+    "label": "Vacunaciones",
+    "fields": [
+      {
+        "key": "producto",
+        "label": "Vacuna",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "dosis",
+        "label": "Dosis y unidad",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "lote",
+        "label": "Lote",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "responsable",
+        "label": "Responsable",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "proxima_fecha",
+        "label": "Próxima fecha indicada",
+        "type": "date",
+        "required": false
+      }
+    ]
+  },
+  "condicion": {
+    "label": "Condición corporal",
+    "fields": [
+      {
+        "key": "escala",
+        "label": "Escala",
+        "type": "select",
+        "required": true,
+        "options": [
+          "1-5",
+          "1-9"
+        ]
+      },
+      {
+        "key": "valor",
+        "label": "Valor observado",
+        "type": "number",
+        "required": true,
+        "min": 1,
+        "max": 9
+      }
+    ]
+  },
+  "secado": {
+    "label": "Secados",
+    "fields": [
+      {
+        "key": "lactancia_id",
+        "label": "Lactancia",
+        "type": "uuid",
+        "required": true
+      },
+      {
+        "key": "motivo",
+        "label": "Motivo",
+        "type": "text",
+        "required": true
+      }
+    ]
+  },
+  "observacion": {
+    "label": "Observaciones",
+    "fields": [
+      {
+        "key": "ambito",
+        "label": "Ámbito",
+        "type": "select",
+        "required": true,
+        "options": [
+          "general",
+          "salud",
+          "lactancia",
+          "reproduccion"
+        ]
+      },
+      {
+        "key": "descripcion",
+        "label": "Descripción",
+        "type": "text",
+        "required": true
+      }
+    ]
+  },
+  "compra": {
+    "label": "Detalles de compras",
+    "fields": [
+      {
+        "key": "importe",
+        "label": "Importe total del animal",
+        "type": "number",
+        "required": true,
+        "min": 0,
+        "max": 999999999
+      },
+      {
+        "key": "moneda",
+        "label": "Moneda",
+        "type": "select",
+        "required": true,
+        "options": [
+          "MXN"
+        ]
+      },
+      {
+        "key": "proveedor",
+        "label": "Proveedor",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "documento",
+        "label": "Referencia",
+        "type": "text",
+        "required": false
+      }
+    ]
+  },
+  "venta": {
+    "label": "Detalles de ventas",
+    "fields": [
+      {
+        "key": "baja_id",
+        "label": "Baja por venta relacionada",
+        "type": "uuid",
+        "required": true
+      },
+      {
+        "key": "importe",
+        "label": "Importe total del animal",
+        "type": "number",
+        "required": true,
+        "min": 0,
+        "max": 999999999
+      },
+      {
+        "key": "moneda",
+        "label": "Moneda",
+        "type": "select",
+        "required": true,
+        "options": [
+          "MXN"
+        ]
+      },
+      {
+        "key": "comprador",
+        "label": "Comprador",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "documento",
+        "label": "Referencia",
+        "type": "text",
+        "required": false
+      }
+    ]
+  }
+}

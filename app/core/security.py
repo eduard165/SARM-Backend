@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from uuid import UUID
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -13,6 +13,7 @@ class Identity:
     id: UUID
     rol: str
     nombre_usuario: str
+    perfil: dict = field(default_factory=dict)
 
 
 def require_token(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)) -> str:
@@ -37,18 +38,11 @@ def get_identity(
         raise HTTPException(status_code=401, detail='Token invalido o expirado') from exc
 
     try:
-        users = db.table('usuarios').select('id,nombre_usuario,bloqueo_global,rol_id').eq('id', str(auth_user.id)).limit(1).execute().data or []
-        if not users or users[0]['bloqueo_global']:
-            raise HTTPException(status_code=403, detail='Cuenta SARM no habilitada')
-        user = users[0]
-        roles = db.table('roles').select('codigo').eq('id', user['rol_id']).limit(1).execute().data or []
-        if not roles:
-            raise HTTPException(status_code=403, detail='Rol SARM no valido')
         from app.services.rpc import ejecutar_rpc
-        enabled = ejecutar_rpc(db, 'sarm_comprobar_acceso', {'p_usuario': str(user['id'])}, migracion='13')
-        if enabled is not True:
-            raise HTTPException(403, 'Cuenta sin acceso activo a un negocio')
-        return Identity(id=UUID(str(user['id'])), rol=roles[0]['codigo'], nombre_usuario=user['nombre_usuario'])
+        profile=ejecutar_rpc(db,'sarm_perfil_acceso',{'p_usuario':str(auth_user.id)},migracion='15')
+        if not isinstance(profile,dict) or profile.get('id')!=str(auth_user.id) or profile.get('rol') not in ('superadministrador','administrador','usuario'):
+            raise HTTPException(502,'Perfil de acceso invalido')
+        return Identity(UUID(profile['id']),profile['rol'],profile['nombre_usuario'],profile)
     except HTTPException:
         raise
     except Exception as exc:

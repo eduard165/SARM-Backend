@@ -117,7 +117,10 @@ def identity_db(enabled):
         q.execute.return_value.data=([{'id': str(USER.id), 'nombre_usuario':'usuario', 'bloqueo_global':False, 'rol_id':TARGET}] if name=='usuarios' else [{'codigo':'usuario'}])
         return q
     db.table.side_effect=table
-    db.rpc.return_value.execute.return_value.data=enabled
+    if enabled:
+        db.rpc.return_value.execute.return_value.data={'id':str(USER.id),'nombre_usuario':'usuario','rol':'usuario','negocios':[]}
+    else:
+        db.rpc.return_value.execute.side_effect=DbError('42501')
     auth=Mock(); auth.auth.get_user.return_value.user=SimpleNamespace(id=str(USER.id))
     return db,auth
 

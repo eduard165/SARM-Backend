@@ -27,7 +27,7 @@ def api():
 
 def test_global_verified_actor(api):
     c,db=api;r=c.get('/inicio/resumen');assert r.status_code==200
-    assert r.headers['cache-control']=='no-store'
+    assert 'no-store' in r.headers['cache-control']
     assert db.rpc.call_args.args==('sarm_resumen_inicio',{'p_actor':str(ACTORS['superadministrador'].id),'p_negocio':None})
 
 

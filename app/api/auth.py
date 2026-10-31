@@ -38,22 +38,5 @@ def login(body: LoginRequest, db: Client = Depends(admin_client)):
 
 
 @router.get('/me')
-def me(identity: Identity = Depends(get_identity), db: Client = Depends(admin_client)):
-    try:
-        found = db.table('usuarios').select('id,nombre_usuario,nombre,apellido_paterno,apellido_materno,bloqueo_global').eq('id', str(identity.id)).limit(1).execute().data or []
-        if not found:
-            raise HTTPException(403, 'Cuenta SARM no disponible')
-        user = found[0]
-        user['rol'] = identity.rol
-        memberships = db.table('usuario_negocios').select('negocio_id,estado_membresia').eq('usuario_id', str(identity.id)).execute().data or []
-        ids = [m['negocio_id'] for m in memberships]
-        names = {}
-        if ids:
-            businesses = db.table('negocios').select('id,nombre,estado_registro').in_('id', ids).execute().data or []
-            names = {b['id']: b for b in businesses}
-        user['negocios'] = [{**m, 'nombre_negocio': names[m['negocio_id']]['nombre'], 'estado_registro': names[m['negocio_id']]['estado_registro']} for m in memberships if m['negocio_id'] in names]
-        return user
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(502, 'Error consultando perfil') from exc
+def me(identity: Identity = Depends(get_identity)):
+    return identity.perfil
